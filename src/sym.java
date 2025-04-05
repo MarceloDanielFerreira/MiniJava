@@ -7,33 +7,34 @@
 public class sym {
   /* terminals */
   public static final int MULT = 20;
-  public static final int C_PAREN = 29;
-  public static final int O_PAREN = 28;
+  public static final int C_PAREN = 30;
+  public static final int O_PAREN = 29;
   public static final int INT = 9;
-  public static final int O_CBRACKET = 32;
+  public static final int O_CBRACKET = 33;
   public static final int MINUS = 19;
   public static final int STATIC = 5;
-  public static final int SEMICOLON = 34;
+  public static final int SEMICOLON = 35;
   public static final int AND = 22;
   public static final int LT = 23;
   public static final int OR = 27;
-  public static final int COMMA = 35;
+  public static final int COMMA = 36;
   public static final int CLASS = 8;
   public static final int DIV = 21;
   public static final int PLUS = 18;
   public static final int MAIN = 7;
   public static final int IF = 10;
   public static final int THIS = 14;
-  public static final int DOT = 36;
-  public static final int O_SBRACKET = 30;
+  public static final int DOT = 37;
+  public static final int O_SBRACKET = 31;
   public static final int EOF = 0;
   public static final int RETURN = 13;
+  public static final int EQUAL = 28;
   public static final int NEW = 15;
   public static final int error = 1;
   public static final int VOID = 6;
   public static final int EQ = 25;
   public static final int ELSE = 11;
-  public static final int C_CBRACKET = 33;
+  public static final int C_CBRACKET = 34;
   public static final int WHILE = 12;
   public static final int PUBLIC = 4;
   public static final int EXTENDS = 3;
@@ -41,10 +42,10 @@ public class sym {
   public static final int GT = 24;
   public static final int PRINT = 2;
   public static final int LENGTH = 16;
-  public static final int C_SBRACKET = 31;
+  public static final int C_SBRACKET = 32;
   public static final int NOTEQ = 26;
-  public static final int INTEGER_LITERAL = 38;
-  public static final int IDENTIFIER = 37;
+  public static final int INTEGER_LITERAL = 39;
+  public static final int IDENTIFIER = 38;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
@@ -74,6 +75,7 @@ public class sym {
   "EQ",
   "NOTEQ",
   "OR",
+  "EQUAL",
   "O_PAREN",
   "C_PAREN",
   "O_SBRACKET",

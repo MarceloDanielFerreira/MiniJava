@@ -54,6 +54,8 @@ BlockComment   = "/*" [^*] ~"*/" | "/*" "*"+ "/"
 ">"            { return symbol(sym.GT, yytext()); }
 "&&"           { return symbol(sym.AND, yytext()); }
 "||"          { return symbol(sym.OR, yytext()); }
+"=="          { return symbol(sym.EQUAL, yytext()); }
+
 	
 
 

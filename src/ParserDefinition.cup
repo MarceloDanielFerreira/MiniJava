@@ -23,7 +23,7 @@ parser code {:
 terminal PRINT, EXTENDS, PUBLIC, STATIC, VOID, MAIN, CLASS, INT, IF, ELSE, WHILE, RETURN, THIS, NEW, LENGTH, STRING;
 
 terminal PLUS, MINUS, MULT, DIV, AND;
-terminal LT, GT, EQ, NOTEQ, OR; 
+terminal LT, GT, EQ, NOTEQ, OR, EQUAL; 
 terminal O_PAREN, C_PAREN, O_SBRACKET, C_SBRACKET, O_CBRACKET, C_CBRACKET;
 terminal SEMICOLON, COMMA, DOT;
 terminal String IDENTIFIER;
@@ -52,7 +52,7 @@ nonterminal ExprList ExprList;
 /* Precedence declarations */
 precedence left OR;
 precedence left AND;
-precedence left EQ, NOTEQ;
+precedence left EQ, NOTEQ, EQUAL;
 precedence left LT, GT;
 precedence left PLUS, MINUS;
 precedence left MULT, DIV;
@@ -195,12 +195,37 @@ MethodDeclList ::= MethodDecl:md
         :};
 
 MethodDecl ::= 
+    // Caso 1: Con declaraciones locales y statements
     PUBLIC Type:t Identifier:id O_PAREN ParamList:pl C_PAREN O_CBRACKET 
-    VarDeclList:vdl StatementList:sl RETURN Expr:exp SEMICOLON C_CBRACKET
+    VarDeclList:vdl StatementList:sl RETURN Expr:exp SEMICOLON 
+    C_CBRACKET
     {: 
         RESULT = new MethodDecl(t, id, pl, vdl, sl, exp, tleft); 
+    :}
+    |
+    // Caso 2: Solo declaraciones locales (sin statements)
+    PUBLIC Type:t Identifier:id O_PAREN ParamList:pl C_PAREN O_CBRACKET 
+    VarDeclList:vdl RETURN Expr:exp SEMICOLON 
+    C_CBRACKET
+    {: 
+        RESULT = new MethodDecl(t, id, pl, vdl, new StatementList(tleft), exp, tleft); 
+    :}
+    |
+    // Caso 3: Solo statements (sin declaraciones locales)
+    PUBLIC Type:t Identifier:id O_PAREN ParamList:pl C_PAREN O_CBRACKET 
+    StatementList:sl RETURN Expr:exp SEMICOLON 
+    C_CBRACKET
+    {: 
+        RESULT = new MethodDecl(t, id, pl, new VarDeclList(tleft), sl, exp, tleft); 
+    :}
+    |
+    // Caso 4: Sin declaraciones ni statements (solo return)
+    PUBLIC Type:t Identifier:id O_PAREN ParamList:pl C_PAREN O_CBRACKET 
+    RETURN Expr:exp SEMICOLON 
+    C_CBRACKET
+    {: 
+        RESULT = new MethodDecl(t, id, pl, new VarDeclList(tleft), new StatementList(tleft), exp, tleft); 
     :};
-
 ParamList ::= 
         {: 
             ParamList pl = new ParamList(0);
@@ -243,6 +268,7 @@ Statement ::= O_CBRACKET StatementList:sl C_CBRACKET
             {: 
                   RESULT = new If(exp, st, st2, expleft);
             :} 
+             
             | WHILE O_PAREN Expr:exp C_PAREN Statement:st
             {: 
                   RESULT = new While(exp, st, expleft);
@@ -280,9 +306,9 @@ Expr ::= Expr:exp LT Expr:exp2
         {: 
               RESULT = new MoreThan(exp, exp2, expleft); 
         :}
-        | Expr:exp EQ Expr:exp2
-        {: 
-              RESULT = new Equal(expleft, exp, exp2); 
+        | Expr:exp EQUAL Expr:exp2
+        {:
+        	RESULT = new Equal(expleft,exp,exp2);
         :}
         | Expr:exp NOTEQ Expr:exp2
         {: 
