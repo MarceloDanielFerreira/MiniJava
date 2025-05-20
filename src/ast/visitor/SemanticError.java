@@ -14,6 +14,6 @@ public class SemanticError extends Exception {
     
     @Override
     public String getMessage() {
-        return "Error at line " + lineNumber + ": " + super.getMessage();
+        return "Error en la  linea " + lineNumber + ": " + super.getMessage();
     }
 } 

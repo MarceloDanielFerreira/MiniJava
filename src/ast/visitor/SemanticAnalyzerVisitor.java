@@ -3,15 +3,28 @@ package ast.visitor;
 import ast.*;
 import java.util.*;
 
+/**
+ * Visitante que realiza el análisis semántico del código fuente.
+ * Verifica tipos, variables no utilizadas, y otras reglas semánticas.
+ */
 public class SemanticAnalyzerVisitor implements Visitor {
+    // Pila de ámbitos para manejar el scope de variables
     private VariableScopeStack scopeStack;
+    // Lista de errores semánticos encontrados
     private List<SemanticError> errors;
+    // Tabla de clases para verificar herencia y tipos
     private Map<String, ClassDecl> classTable;
+    // Clase actual siendo analizada
     private String currentClass;
+    // Método actual siendo analizado
     private String currentMethod;
+    // Tipo de retorno del método actual
     private Type currentMethodReturnType;
+    // Parámetros del método actual
     private List<Type> currentMethodParams;
+    // Indica si estamos en la clase main
     private boolean inMainClass;
+    private Goal currentGoal;
 
     public SemanticAnalyzerVisitor() {
         this.scopeStack = new VariableScopeStack();
@@ -24,12 +37,19 @@ public class SemanticAnalyzerVisitor implements Visitor {
         this.inMainClass = false;
     }
 
+    /**
+     * Retorna la lista de errores semánticos encontrados.
+     * Antes de retornar, verifica variables no utilizadas.
+     */
     public List<SemanticError> getErrors() {
-        // Check for unused variables before returning errors
         checkUnusedVariables();
         return errors;
     }
 
+    /**
+     * Verifica variables no utilizadas en el ámbito actual.
+     * Agrega errores para cada variable declarada pero no usada.
+     */
     private void checkUnusedVariables() {
         VariableScope currentScope = scopeStack.getCurrentScope();
         if (currentScope != null) {
@@ -37,16 +57,23 @@ public class SemanticAnalyzerVisitor implements Visitor {
             for (Map.Entry<String, Variable> entry : variables.entrySet()) {
                 Variable var = entry.getValue();
                 if (!var.used) {
-                    addError("Variable '" + var.id.s + "' declared but never used", var.id.line);
+                    addError("Variable '" + var.id.s + "' declarada pero nunca utilizada", var.id.line);
                 }
             }
         }
     }
 
+    /**
+     * Agrega un error semántico a la lista de errores.
+     */
     private void addError(String message, int lineNumber) {
         errors.add(new SemanticError(message, lineNumber));
     }
 
+    /**
+     * Verifica si un tipo es subtipo de otro.
+     * Maneja herencia de clases y tipos básicos.
+     */
     private boolean isSubtype(Type t1, Type t2) {
         if (t1 instanceof ClassType && t2 instanceof ClassType) {
             String className1 = ((ClassType) t1).className;
@@ -56,6 +83,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
                 return true;
             }
             
+            // Verifica herencia
             ClassDecl classDecl = classTable.get(className1);
             while (classDecl instanceof ClassDeclExtends) {
                 String parentName = ((ClassDeclExtends) classDecl).j.s;
@@ -68,8 +96,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         return t1.getClass().equals(t2.getClass());
     }
 
+    /**
+     * Visita el nodo Goal (programa completo).
+     * Realiza dos pasadas:
+     * 1. Recolecta todas las declaraciones de clases
+     * 2. Analiza el código
+     */
     public void visit(Goal n) {
-        // First pass: collect all class declarations
+        // Primera pasada: recolectar declaraciones de clases
         for (int i = 0; i < n.cl.size(); i++) {
             ClassDecl c = n.cl.get(i);
             if (c instanceof ClassDeclSimple) {
@@ -81,13 +115,17 @@ public class SemanticAnalyzerVisitor implements Visitor {
             }
         }
 
-        // Second pass: analyze
+        // Segunda pasada: analizar
         visit(n.m);
         for (int i = 0; i < n.cl.size(); i++) {
             visit(n.cl.get(i));
         }
     }
 
+    /**
+     * Visita una declaración de clase.
+     * Redirige al visitante específico según el tipo de clase.
+     */
     public void visit(ClassDecl c) {
         if (c instanceof ClassDeclExtends) {
             visit((ClassDeclExtends) c);
@@ -96,37 +134,50 @@ public class SemanticAnalyzerVisitor implements Visitor {
         }
     }
 
+    /**
+     * Visita la clase main.
+     * Maneja el ámbito especial de la clase main y sus variables.
+     */
     public void visit(MainClass n) {
         inMainClass = true;
         currentClass = n.i1.s;
         scopeStack.pushScope();
         
-        // Add args parameter - Fix String[] type
+        // Agregar parámetro args
         ClassType stringArrayType = new ClassType(n.i2.line, "String[]");
         try {
             insertSymbol(stringArrayType, n.i2, null);
+            // Marcar args como usado ya que es un parámetro requerido
+            Variable argsVar = scopeStack.lookup(n.i2.s);
+            if (argsVar != null) {
+                argsVar.used = true;
+            }
         } catch (SemanticError e) {
             addError(e.getMessage(), e.getLineNumber());
         }
         
-        // Visit variables and statements
+        // Visitar variables y sentencias
         for (int i = 0; i < n.vl.size(); i++) {
             visit(n.vl.get(i));
         }
         for (int i = 0; i < n.sl.size(); i++) {
             visit(n.sl.get(i));
         }
-        
+        checkUnusedVariables();
         scopeStack.popScope();
         inMainClass = false;
         currentClass = null;
     }
 
+    /**
+     * Visita una clase simple (sin herencia).
+     * Analiza sus variables y métodos.
+     */
     public void visit(ClassDeclSimple n) {
         currentClass = n.i.s;
         scopeStack.pushScope();
         
-        // Visit variables and methods
+        // Visitar variables y métodos
         for (int i = 0; i < n.vl.size(); i++) {
             visit(n.vl.get(i));
         }
@@ -134,17 +185,20 @@ public class SemanticAnalyzerVisitor implements Visitor {
             visit(n.ml.get(i));
         }
         
-        // Check for unused variables in class scope
         checkUnusedVariables();
         scopeStack.popScope();
         currentClass = null;
     }
 
+    /**
+     * Visita una clase con herencia.
+     * Analiza sus variables y métodos, considerando la herencia.
+     */
     public void visit(ClassDeclExtends n) {
         currentClass = n.i.s;
         scopeStack.pushScope();
         
-        // Visit variables and methods
+        // Visitar variables y métodos
         for (int i = 0; i < n.vl.size(); i++) {
             visit(n.vl.get(i));
         }
@@ -152,12 +206,15 @@ public class SemanticAnalyzerVisitor implements Visitor {
             visit(n.ml.get(i));
         }
         
-        // Check for unused variables in class scope
         checkUnusedVariables();
         scopeStack.popScope();
         currentClass = null;
     }
 
+    /**
+     * Visita una declaración de variable simple.
+     * Verifica que no esté duplicada en el ámbito actual.
+     */
     public void visit(VarDeclSimple n) {
         try {
             insertSymbol(n.t, n.i, null);
@@ -166,18 +223,26 @@ public class SemanticAnalyzerVisitor implements Visitor {
         }
     }
 
+    /**
+     * Visita una declaración de variable con asignación.
+     * Verifica tipos y que no esté duplicada.
+     */
     public void visit(VarDeclAssign n) {
         try {
             insertSymbol(n.t, n.i, n.e);
             Type exprType = getExpressionType(n.e);
             if (!isSubtype(exprType, n.t)) {
-                addError("Type mismatch in variable assignment", n.i.line);
+                addError("Error de tipo en asignación de variable", n.i.line);
             }
         } catch (SemanticError e) {
             addError(e.getMessage(), e.getLineNumber());
         }
     }
 
+    /**
+     * Visita una declaración de método.
+     * Analiza parámetros, variables locales y cuerpo del método.
+     */
     public void visit(MethodDecl n) {
         currentMethod = n.i.s;
         currentMethodReturnType = n.t;
@@ -185,7 +250,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         
         scopeStack.pushScope();
         
-        // Add parameters to scope
+        // Agregar parámetros al ámbito
         for (int i = 0; i < n.fl.size(); i++) {
             Param p = n.fl.get(i);
             currentMethodParams.add(p.t);
@@ -196,7 +261,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
             }
         }
         
-        // Visit variables and statements
+        // Visitar variables y sentencias
         for (int i = 0; i < n.vl.size(); i++) {
             visit(n.vl.get(i));
         }
@@ -204,13 +269,13 @@ public class SemanticAnalyzerVisitor implements Visitor {
             visit(n.sl.get(i));
         }
         
-        // Check return type
+        // Verificar tipo de retorno
         Type returnType = getExpressionType(n.e);
         if (!isSubtype(returnType, currentMethodReturnType)) {
-            addError("Return type mismatch in method " + currentMethod, n.e.line);
+            addError("Error de tipo en retorno del método " + currentMethod, n.e.line);
         }
         
-        // Mark parameters as used if they are used in the method body
+        // Marcar parámetros como usados si se usan en el cuerpo
         for (int i = 0; i < n.fl.size(); i++) {
             Param p = n.fl.get(i);
             Variable var = scopeStack.lookup(p.i.s);
@@ -219,7 +284,6 @@ public class SemanticAnalyzerVisitor implements Visitor {
             }
         }
         
-        // Check for unused variables in method scope
         checkUnusedVariables();
         scopeStack.popScope();
         currentMethod = null;
@@ -227,22 +291,39 @@ public class SemanticAnalyzerVisitor implements Visitor {
         currentMethodParams = null;
     }
 
+    /**
+     * Visita un parámetro de método.
+     * La lógica principal está en MethodDecl.
+     */
     public void visit(Param n) {
-        // Handled in MethodDecl
+        // Manejado en MethodDecl
     }
 
+    /**
+     * Visita un tipo de array de enteros.
+     */
     public void visit(IntArrayType n) {
-        // No action needed
+        // No se requiere acción
     }
 
+    /**
+     * Visita un tipo entero.
+     */
     public void visit(IntType n) {
-        // No action needed
+        // No se requiere acción
     }
 
+    /**
+     * Visita un tipo de clase.
+     */
     public void visit(ClassType n) {
-        // No action needed
+        // No se requiere acción
     }
 
+    /**
+     * Visita un bloque de código.
+     * Crea un nuevo ámbito para las variables locales.
+     */
     public void visit(Block n) {
         scopeStack.pushScope();
         for (int i = 0; i < n.sl.size(); i++) {
@@ -251,43 +332,66 @@ public class SemanticAnalyzerVisitor implements Visitor {
         scopeStack.popScope();
     }
 
+    /**
+     * Visita una sentencia if.
+     * Verifica que la condición sea de tipo entero.
+     */
     public void visit(If n) {
         Type condType = getExpressionType(n.e);
         if (!(condType instanceof IntType)) {
-            addError("Condition must be of type int", n.e.line);
+            addError("La condición debe ser de tipo int", n.e.line);
         }
         visit(n.s1);
         visit(n.s2);
     }
 
+    /**
+     * Visita una sentencia while.
+     * Verifica que la condición sea de tipo entero.
+     */
     public void visit(While n) {
         Type condType = getExpressionType(n.e);
         if (!(condType instanceof IntType)) {
-            addError("Condition must be of type int", n.e.line);
+            addError("La condición debe ser de tipo int", n.e.line);
         }
         visit(n.s);
     }
 
+    /**
+     * Visita una sentencia print.
+     * Verifica que la expresión sea de tipo entero.
+     */
     public void visit(Print n) {
         Type exprType = getExpressionType(n.e);
         if (!(exprType instanceof IntType)) {
-            addError("Print expression must be of type int", n.e.line);
+            addError("La expresión a imprimir debe ser de tipo int", n.e.line);
+        }
+        // Marcar variables usadas en la expresión de impresión
+        if (n.e instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e).s);
+            if (var != null) {
+                var.used = true;
+            }
         }
     }
 
+    /**
+     * Visita una asignación.
+     * Verifica que la variable exista y los tipos coincidan.
+     */
     public void visit(Assign n) {
         Variable var = scopeStack.lookup(n.i.s);
         if (var == null) {
-            addError("Variable " + n.i.s + " not declared", n.i.line);
+            addError("Variable " + n.i.s + " no declarada", n.i.line);
             return;
         }
         
         Type exprType = getExpressionType(n.e);
         if (!isSubtype(exprType, var.type)) {
-            addError("Type mismatch in assignment", n.i.line);
+            addError("Error de tipo en asignación", n.i.line);
         }
         
-        // Mark variables used in the expression as used
+        // Marcar variables usadas en la expresión
         if (n.e instanceof IdentifierExpr) {
             Variable exprVar = scopeStack.lookup(((IdentifierExpr) n.e).s);
             if (exprVar != null) {
@@ -296,29 +400,33 @@ public class SemanticAnalyzerVisitor implements Visitor {
         }
     }
 
+    /**
+     * Visita una asignación a array.
+     * Verifica tipos y que la variable sea un array.
+     */
     public void visit(ArrayAssign n) {
         Variable var = scopeStack.lookup(n.i.s);
         if (var == null) {
-            addError("Variable " + n.i.s + " not declared", n.i.line);
+            addError("Variable " + n.i.s + " no declarada", n.i.line);
             return;
         }
         
         if (!(var.type instanceof IntArrayType)) {
-            addError("Variable " + n.i.s + " is not an array", n.i.line);
+            addError("Variable " + n.i.s + " no es un array", n.i.line);
             return;
         }
         
         Type indexType = getExpressionType(n.e1);
         if (!(indexType instanceof IntType)) {
-            addError("Array index must be of type int", n.e1.line);
+            addError("El índice del array debe ser de tipo int", n.e1.line);
         }
         
         Type valueType = getExpressionType(n.e2);
         if (!(valueType instanceof IntType)) {
-            addError("Array element must be of type int", n.e2.line);
+            addError("El elemento del array debe ser de tipo int", n.e2.line);
         }
         
-        // Mark variables used in expressions as used
+        // Marcar variables usadas en las expresiones
         if (n.e1 instanceof IdentifierExpr) {
             Variable exprVar = scopeStack.lookup(((IdentifierExpr) n.e1).s);
             if (exprVar != null) {
@@ -333,11 +441,15 @@ public class SemanticAnalyzerVisitor implements Visitor {
         }
     }
 
+    /**
+     * Visita una expresión de operador lógico.
+     * Verifica que los operandos sean de tipo entero.
+     */
     public void visit(And n) {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("And operands must be of type int", n.e1.line);
+            addError("Los operandos de AND deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -345,7 +457,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("Or operands must be of type int", n.e1.line);
+            addError("Los operandos de OR deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -353,7 +465,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("LessThan operands must be of type int", n.e1.line);
+            addError("Los operandos de < deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -361,7 +473,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("MoreThan operands must be of type int", n.e1.line);
+            addError("Los operandos de > deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -369,7 +481,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!isSubtype(t1, t2) && !isSubtype(t2, t1)) {
-            addError("Equal operands must be of compatible types", n.e1.line);
+            addError("Los operandos de == deben ser de tipos compatibles", n.e1.line);
         }
     }
 
@@ -377,7 +489,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!isSubtype(t1, t2) && !isSubtype(t2, t1)) {
-            addError("NotEqual operands must be of compatible types", n.e1.line);
+            addError("Los operandos de != deben ser de tipos compatibles", n.e1.line);
         }
     }
 
@@ -385,7 +497,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("Plus operands must be of type int", n.e1.line);
+            addError("Los operandos de + deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -393,7 +505,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("Minus operands must be of type int", n.e1.line);
+            addError("Los operandos de - deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -401,7 +513,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("Mult operands must be of type int", n.e1.line);
+            addError("Los operandos de * deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -409,7 +521,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("Div operands must be of type int", n.e1.line);
+            addError("Los operandos de / deben ser de tipo int", n.e1.line);
         }
     }
 
@@ -418,13 +530,13 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type indexType = getExpressionType(n.e2);
         
         if (!(arrayType instanceof IntArrayType)) {
-            addError("Array lookup must be performed on an array", n.e1.line);
+            addError("Se debe acceder a un array", n.e1.line);
         }
         if (!(indexType instanceof IntType)) {
-            addError("Array index must be of type int", n.e2.line);
+            addError("El índice del array debe ser de tipo int", n.e2.line);
         }
         
-        // Mark variables used in array lookup as used
+        // Marcar variables usadas en el acceso al array
         if (n.e1 instanceof IdentifierExpr) {
             Variable exprVar = scopeStack.lookup(((IdentifierExpr) n.e1).s);
             if (exprVar != null) {
@@ -442,25 +554,25 @@ public class SemanticAnalyzerVisitor implements Visitor {
     public void visit(ArrayLength n) {
         Type arrayType = getExpressionType(n.e);
         if (!(arrayType instanceof IntArrayType)) {
-            addError("Length can only be accessed on arrays", n.e.line);
+            addError("Solo se puede acceder a length de arrays", n.e.line);
         }
     }
 
     public void visit(Call n) {
         Type objType = getExpressionType(n.e);
         if (!(objType instanceof ClassType)) {
-            addError("Method call must be on an object", n.e.line);
+            addError("La llamada a método debe ser sobre un objeto", n.e.line);
             return;
         }
         
         String className = ((ClassType) objType).className;
         ClassDecl classDecl = classTable.get(className);
         if (classDecl == null) {
-            addError("Class " + className + " not found", n.e.line);
+            addError("Clase " + className + " no encontrada", n.e.line);
             return;
         }
         
-        // Find method in class hierarchy
+        // Buscar método en la jerarquía de clases
         MethodDecl method = null;
         while (classDecl != null) {
             if (classDecl instanceof ClassDeclSimple) {
@@ -487,63 +599,67 @@ public class SemanticAnalyzerVisitor implements Visitor {
         }
         
         if (method == null) {
-            addError("Method " + n.i.s + " not found in class " + className, n.i.line);
+            addError("Método " + n.i.s + " no encontrado en clase " + className, n.i.line);
             return;
         }
         
-        // Check number of arguments
+        // Verificar número de argumentos
         if (n.el.size() != method.fl.size()) {
-            addError("Wrong number of arguments in method call", n.i.line);
+            addError("Número incorrecto de argumentos en llamada a método", n.i.line);
             return;
         }
         
-        // Check argument types
+        // Verificar tipos de argumentos
         for (int i = 0; i < n.el.size(); i++) {
             Type argType = getExpressionType(n.el.get(i));
             Type paramType = method.fl.get(i).t;
             if (!isSubtype(argType, paramType)) {
-                addError("Argument type mismatch in method call", n.el.get(i).line);
+                addError("Error de tipo en argumento de llamada a método", n.el.get(i).line);
             }
         }
     }
 
     public void visit(IntegerLiteral n) {
-        // No action needed
+        // No se requiere acción
     }
 
     public void visit(IdentifierExpr n) {
         Variable var = scopeStack.lookup(n.s);
         if (var == null) {
-            addError("Variable " + n.s + " not declared", n.line);
+            addError("Variable " + n.s + " no declarada", n.line);
             return;
         }
-        // Mark variable as used when it appears in an expression (being read)
+        // Marcar variable como usada cuando aparece en una expresión
         var.used = true;
     }
 
     public void visit(This n) {
         if (currentClass == null) {
-            addError("'this' cannot be used in static context", n.line);
+            addError("'this' no puede usarse en contexto estático", n.line);
         }
     }
 
     public void visit(NewArray n) {
         Type sizeType = getExpressionType(n.e);
         if (!(sizeType instanceof IntType)) {
-            addError("Array size must be of type int", n.e.line);
+            addError("El tamaño del array debe ser de tipo int", n.e.line);
         }
     }
 
     public void visit(NewObject n) {
         if (!classTable.containsKey(n.i.s)) {
-            addError("Class " + n.i.s + " not found", n.i.line);
+            addError("Clase " + n.i.s + " no encontrada", n.i.line);
         }
     }
 
     public void visit(Identifier n) {
-        // No action needed
+        // No se requiere acción
     }
 
+    /**
+     * Obtiene el tipo de una expresión.
+     * Usado para verificación de tipos en tiempo de compilación.
+     */
     private Type getExpressionType(Expr e) {
         if (e == null) {
             return null;
@@ -568,7 +684,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
         } else if (e instanceof ArrayLookup) {
             return new IntType(e.line);
         } else if (e instanceof Call) {
-            // Find method return type
+            // Encontrar tipo de retorno del método
             Type objType = getExpressionType(((Call) e).e);
             if (objType instanceof ClassType) {
                 String className = ((ClassType) objType).className;
@@ -604,6 +720,10 @@ public class SemanticAnalyzerVisitor implements Visitor {
         return null;
     }
 
+    /**
+     * Inserta un símbolo en el ámbito actual.
+     * Usado para declarar variables y parámetros.
+     */
     private void insertSymbol(Type t, Identifier id, Expr expOpt) throws SemanticError {
         scopeStack.insertSymbol(t, id, expOpt);
     }
