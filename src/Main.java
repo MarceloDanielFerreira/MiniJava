@@ -2,6 +2,8 @@ import java.io.InputStreamReader;
 import ast.Goal;
 import ast.visitor.MiniJPrintVisitor;
 import ast.visitor.ASTPrinterVisitor;
+import ast.visitor.SemanticAnalyzerVisitor;
+import ast.visitor.SemanticError;
 import ast.visitor.Visitor;
 import java_cup.runtime.Symbol;
 
@@ -26,6 +28,23 @@ public class Main {
             System.out.println("======================");
             Visitor ast = new ASTPrinterVisitor();
             ast.visit(g);
+            
+            // Run semantic analysis last
+            System.out.println("\n\n======================");
+            System.out.println("  SEMANTIC ANALYSIS   ");
+            System.out.println("======================");
+            SemanticAnalyzerVisitor semantic = new SemanticAnalyzerVisitor();
+            semantic.visit(g);
+            
+            // Print semantic errors if any
+            if (!semantic.getErrors().isEmpty()) {
+                System.out.println("\nSemantic errors found:");
+                for (SemanticError error : semantic.getErrors()) {
+                    System.out.println(error.getMessage());
+                }
+            } else {
+                System.out.println("\nNo semantic errors found.");
+            }
             
         } catch (Exception e) {
             e.printStackTrace();

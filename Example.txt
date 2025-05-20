@@ -9,7 +9,8 @@ public class BubbleSort{
 // methods to initialize, print and sort the array
 // using Bublesort
 public class BBS{
-    
+    int a ;
+    int a;
     int[] number ;
     int size ;
 
