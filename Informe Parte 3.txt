@@ -1,0 +1,70 @@
+INFORME DE IMPLEMENTACIÓN DEL ANALIZADOR SEMÁNTICO
+
+1. Variables no utilizadas
+✓ IMPLEMENTADO
+- El analizador detecta variables no utilizadas mediante el campo 'used' en la clase Variable
+- Se verifica al final de cada ámbito (método, clase, bloque) usando checkUnusedVariables()
+- Se marcan las variables como usadas cuando aparecen en expresiones o asignaciones
+- Se genera un error semántico para cada variable no utilizada
+
+2. Optimización de la R.I. (Remover variables no utilizadas)
+✗ NO IMPLEMENTADO
+- Aunque se detectan las variables no utilizadas, no se realiza la optimización del árbol
+- Se requeriría un nuevo visitor (OptimizationVisitor) para remover las declaraciones no utilizadas
+
+3. Variables duplicadas
+✓ IMPLEMENTADO
+- Se verifica en insertSymbol() que no existan variables duplicadas en el mismo ámbito
+- Se genera un error semántico cuando se detecta una variable duplicada
+- Se maneja correctamente el scope de variables en diferentes ámbitos
+
+4. Type checking en asignaciones
+✓ IMPLEMENTADO
+- Se verifica la compatibilidad de tipos usando isSubtype()
+- Se maneja correctamente la herencia entre clases
+- Se verifica el scope de las variables antes de asignar
+- Se generan errores semánticos para asignaciones incorrectas
+
+5. Type checking en parámetros de métodos
+✓ IMPLEMENTADO
+- Se verifica el número correcto de argumentos
+- Se verifica la compatibilidad de tipos entre argumentos y parámetros
+- Se verifica el tipo de retorno del método
+- Se generan errores semánticos para cada tipo de error
+
+6. Type checking entre expresiones
+✓ IMPLEMENTADO
+- Se verifica la compatibilidad de tipos en operaciones binarias
+- Se verifica el tipo de retorno de llamadas a métodos
+- Se verifica el tipo de variables en expresiones
+- Se generan errores semánticos para expresiones inválidas
+
+7. Chequeo de métodos existentes
+✓ IMPLEMENTADO
+- Se verifica la existencia de métodos en la jerarquía de clases
+- Se maneja correctamente la herencia al buscar métodos
+- Se generan errores semánticos para métodos no encontrados
+
+8. Type checking en retorno de métodos
+✓ IMPLEMENTADO
+- Se verifica que el tipo de retorno coincida con el declarado
+- Se verifica la compatibilidad de tipos usando isSubtype()
+- Se generan errores semánticos para retornos incorrectos
+
+Características adicionales implementadas:
+- Manejo de ámbitos anidados mediante VariableScopeStack
+- Verificación de tipos para arrays y objetos
+- Verificación de tipos en operaciones aritméticas y lógicas
+- Verificación de tipos en condiciones de if y while
+- Verificación de tipos en operaciones con arrays
+- Manejo de errores semánticos con mensajes descriptivos
+- No aborta el proceso de compilación, continúa buscando errores
+
+Recomendaciones de mejora:
+1. Implementar el OptimizationVisitor para remover código no utilizado
+2. Agregar más mensajes de error descriptivos
+3. Mejorar el manejo de errores en cascada
+4. Agregar verificación de ciclos en la herencia
+5. Implementar verificación de métodos abstractos
+6. Agregar verificación de inicialización de variables
+7. Mejorar el manejo de tipos genéricos o arrays de objetos 

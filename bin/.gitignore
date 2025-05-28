@@ -1,10 +1,1 @@
-/Main.class
-/ParserDefinition.cup
-/Scanner.class
-/Scanner.java~
-/ScannerDefinition.jflex
-/TestScanner.class
 /ast/
-/parser$CUP$parser$actions.class
-/parser.class
-/sym.class

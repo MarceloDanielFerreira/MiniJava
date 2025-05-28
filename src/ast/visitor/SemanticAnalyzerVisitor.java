@@ -43,6 +43,8 @@ public class SemanticAnalyzerVisitor implements Visitor {
      */
     public List<SemanticError> getErrors() {
         checkUnusedVariables();
+        // Ordenar errores por número de línea
+        Collections.sort(errors, (e1, e2) -> Integer.compare(e1.getLineNumber(), e2.getLineNumber()));
         return errors;
     }
 
@@ -83,12 +85,17 @@ public class SemanticAnalyzerVisitor implements Visitor {
                 return true;
             }
             
-            // Verifica herencia
+            // Verificar herencia con control de ciclos
+            Set<String> visited = new HashSet<>();
             ClassDecl classDecl = classTable.get(className1);
             while (classDecl instanceof ClassDeclExtends) {
                 String parentName = ((ClassDeclExtends) classDecl).j.s;
                 if (parentName.equals(className2)) {
                     return true;
+                }
+                if (!visited.add(parentName)) {
+                    System.out.println("Ciclo detectado en jerarquía de clases: " + parentName);
+                    return false;
                 }
                 classDecl = classTable.get(parentName);
             }
@@ -366,7 +373,6 @@ public class SemanticAnalyzerVisitor implements Visitor {
         if (!(exprType instanceof IntType)) {
             addError("La expresión a imprimir debe ser de tipo int", n.e.line);
         }
-        // Marcar variables usadas en la expresión de impresión
         if (n.e instanceof IdentifierExpr) {
             Variable var = scopeStack.lookup(((IdentifierExpr) n.e).s);
             if (var != null) {
@@ -388,7 +394,9 @@ public class SemanticAnalyzerVisitor implements Visitor {
         
         Type exprType = getExpressionType(n.e);
         if (!isSubtype(exprType, var.type)) {
-            addError("Error de tipo en asignación", n.i.line);
+            addError("Error de tipo en asignación: no se puede asignar " + 
+                    (exprType != null ? exprType.getClass().getSimpleName() : "null") + 
+                    " a " + var.type.getClass().getSimpleName(), n.i.line);
         }
         
         // Marcar variables usadas en la expresión
@@ -426,7 +434,6 @@ public class SemanticAnalyzerVisitor implements Visitor {
             addError("El elemento del array debe ser de tipo int", n.e2.line);
         }
         
-        // Marcar variables usadas en las expresiones
         if (n.e1 instanceof IdentifierExpr) {
             Variable exprVar = scopeStack.lookup(((IdentifierExpr) n.e1).s);
             if (exprVar != null) {
@@ -451,6 +458,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
             addError("Los operandos de AND deben ser de tipo int", n.e1.line);
         }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
+        }
     }
 
     public void visit(Or n) {
@@ -458,6 +473,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
             addError("Los operandos de OR deben ser de tipo int", n.e1.line);
+        }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
         }
     }
 
@@ -467,6 +490,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
             addError("Los operandos de < deben ser de tipo int", n.e1.line);
         }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
+        }
     }
 
     public void visit(MoreThan n) {
@@ -474,6 +505,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
             addError("Los operandos de > deben ser de tipo int", n.e1.line);
+        }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
         }
     }
 
@@ -483,6 +522,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         if (!isSubtype(t1, t2) && !isSubtype(t2, t1)) {
             addError("Los operandos de == deben ser de tipos compatibles", n.e1.line);
         }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
+        }
     }
 
     public void visit(NotEqual n) {
@@ -491,13 +538,32 @@ public class SemanticAnalyzerVisitor implements Visitor {
         if (!isSubtype(t1, t2) && !isSubtype(t2, t1)) {
             addError("Los operandos de != deben ser de tipos compatibles", n.e1.line);
         }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
+        }
     }
 
     public void visit(Plus n) {
         Type t1 = getExpressionType(n.e1);
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
-            addError("Los operandos de + deben ser de tipo int", n.e1.line);
+            addError("Error de tipo en operación +: no se puede sumar " + 
+                    (t1 != null ? t1.getClass().getSimpleName() : "null") + 
+                    " con " + (t2 != null ? t2.getClass().getSimpleName() : "null"), n.e1.line);
+        }
+        // Marcar variables usadas en la expresión
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
         }
     }
 
@@ -507,6 +573,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
             addError("Los operandos de - deben ser de tipo int", n.e1.line);
         }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
+        }
     }
 
     public void visit(Mult n) {
@@ -515,6 +589,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
             addError("Los operandos de * deben ser de tipo int", n.e1.line);
         }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
+        }
     }
 
     public void visit(Div n) {
@@ -522,6 +604,14 @@ public class SemanticAnalyzerVisitor implements Visitor {
         Type t2 = getExpressionType(n.e2);
         if (!(t1 instanceof IntType) || !(t2 instanceof IntType)) {
             addError("Los operandos de / deben ser de tipo int", n.e1.line);
+        }
+        if (n.e1 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
+            if (var != null) var.used = true;
+        }
+        if (n.e2 instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e2).s);
+            if (var != null) var.used = true;
         }
     }
 
@@ -536,7 +626,6 @@ public class SemanticAnalyzerVisitor implements Visitor {
             addError("El índice del array debe ser de tipo int", n.e2.line);
         }
         
-        // Marcar variables usadas en el acceso al array
         if (n.e1 instanceof IdentifierExpr) {
             Variable exprVar = scopeStack.lookup(((IdentifierExpr) n.e1).s);
             if (exprVar != null) {
@@ -558,63 +647,106 @@ public class SemanticAnalyzerVisitor implements Visitor {
         }
     }
 
+    /**
+     * Busca un método en una clase específica.
+     * @param classDecl La clase donde buscar el método
+     * @param methodName El nombre del método a buscar
+     * @return El método encontrado o null si no existe
+     */
+    private MethodDecl findMethodInClass(ClassDecl classDecl, String methodName) {
+        MethodDeclList methodList = null;
+        if (classDecl instanceof ClassDeclSimple) {
+            methodList = ((ClassDeclSimple) classDecl).ml;
+        } else if (classDecl instanceof ClassDeclExtends) {
+            methodList = ((ClassDeclExtends) classDecl).ml;
+        }
+
+        if (methodList != null) {
+            for (int i = 0; i < methodList.size(); i++) {
+                MethodDecl m = methodList.get(i);
+                if (m.i.s.equals(methodName)) {
+                    return m;
+                }
+            }
+        }
+        return null;
+    }
+
     public void visit(Call n) {
         Type objType = getExpressionType(n.e);
         if (!(objType instanceof ClassType)) {
             addError("La llamada a método debe ser sobre un objeto", n.e.line);
             return;
         }
-        
+
         String className = ((ClassType) objType).className;
-        ClassDecl classDecl = classTable.get(className);
-        if (classDecl == null) {
+        ClassDecl currentClassDecl = classTable.get(className);
+
+        if (currentClassDecl == null) {
             addError("Clase " + className + " no encontrada", n.e.line);
             return;
         }
-        
-        // Buscar método en la jerarquía de clases
+
+        // Control de ciclos en herencia
+        Set<String> visitedClasses = new HashSet<>();
+        int maxDepth = 10;
+        int currentDepth = 0;
         MethodDecl method = null;
-        while (classDecl != null) {
-            if (classDecl instanceof ClassDeclSimple) {
-                ClassDeclSimple cs = (ClassDeclSimple) classDecl;
-                for (int i = 0; i < cs.ml.size(); i++) {
-                    MethodDecl m = cs.ml.get(i);
-                    if (m.i.s.equals(n.i.s)) {
-                        method = m;
-                        break;
-                    }
-                }
-            } else if (classDecl instanceof ClassDeclExtends) {
-                ClassDeclExtends ce = (ClassDeclExtends) classDecl;
-                for (int i = 0; i < ce.ml.size(); i++) {
-                    MethodDecl m = ce.ml.get(i);
-                    if (m.i.s.equals(n.i.s)) {
-                        method = m;
-                        break;
-                    }
-                }
-                classDecl = classTable.get(ce.j.s);
+
+        while (currentClassDecl != null && currentDepth < maxDepth) {
+            currentDepth++;
+            String currentClassName = currentClassDecl instanceof ClassDeclSimple ?
+                ((ClassDeclSimple) currentClassDecl).i.s : ((ClassDeclExtends) currentClassDecl).i.s;
+
+            if (visitedClasses.contains(currentClassName)) {
+                break;
             }
-            if (method != null) break;
+            visitedClasses.add(currentClassName);
+
+            // Buscar método en la clase actual
+            method = findMethodInClass(currentClassDecl, n.i.s);
+            if (method != null) {
+                break;
+            }
+
+            // Si no se encontró, subir en la jerarquía
+            if (currentClassDecl instanceof ClassDeclExtends) {
+                currentClassDecl = classTable.get(((ClassDeclExtends) currentClassDecl).j.s);
+            } else {
+                currentClassDecl = null;
+            }
         }
-        
+
         if (method == null) {
-            addError("Método " + n.i.s + " no encontrado en clase " + className, n.i.line);
+            addError("Método '" + n.i.s + "' no encontrado en clase " + className, n.i.line);
             return;
         }
-        
+
         // Verificar número de argumentos
         if (n.el.size() != method.fl.size()) {
-            addError("Número incorrecto de argumentos en llamada a método", n.i.line);
+            addError("Número incorrecto de argumentos en llamada a método " + n.i.s + 
+                    ": se esperaban " + method.fl.size() + " pero se recibieron " + n.el.size(), n.i.line);
             return;
         }
-        
+
         // Verificar tipos de argumentos
         for (int i = 0; i < n.el.size(); i++) {
             Type argType = getExpressionType(n.el.get(i));
             Type paramType = method.fl.get(i).t;
+            
+            // Marcar variables usadas en los argumentos
+            if (n.el.get(i) instanceof IdentifierExpr) {
+                Variable var = scopeStack.lookup(((IdentifierExpr) n.el.get(i)).s);
+                if (var != null) {
+                    var.used = true;
+                }
+            }
+            
             if (!isSubtype(argType, paramType)) {
-                addError("Error de tipo en argumento de llamada a método", n.el.get(i).line);
+                String argTypeName = argType != null ? argType.getClass().getSimpleName() : "null";
+                String paramTypeName = paramType != null ? paramType.getClass().getSimpleName() : "null";
+                addError("Error de tipo en argumento " + (i+1) + " de llamada a método " + n.i.s + 
+                        ": no se puede pasar " + argTypeName + " donde se espera " + paramTypeName, n.el.get(i).line);
             }
         }
     }
@@ -629,7 +761,6 @@ public class SemanticAnalyzerVisitor implements Visitor {
             addError("Variable " + n.s + " no declarada", n.line);
             return;
         }
-        // Marcar variable como usada cuando aparece en una expresión
         var.used = true;
     }
 
@@ -669,6 +800,9 @@ public class SemanticAnalyzerVisitor implements Visitor {
             return new IntType(e.line);
         } else if (e instanceof IdentifierExpr) {
             Variable var = scopeStack.lookup(((IdentifierExpr) e).s);
+            if (var != null) {
+                var.used = true;
+            }
             return var != null ? var.type : null;
         } else if (e instanceof This) {
             if (currentClass == null) {
@@ -682,9 +816,16 @@ public class SemanticAnalyzerVisitor implements Visitor {
         } else if (e instanceof ArrayLength) {
             return new IntType(e.line);
         } else if (e instanceof ArrayLookup) {
+            if (((ArrayLookup) e).e1 instanceof IdentifierExpr) {
+                Variable var = scopeStack.lookup(((IdentifierExpr) ((ArrayLookup) e).e1).s);
+                if (var != null) var.used = true;
+            }
+            if (((ArrayLookup) e).e2 instanceof IdentifierExpr) {
+                Variable var = scopeStack.lookup(((IdentifierExpr) ((ArrayLookup) e).e2).s);
+                if (var != null) var.used = true;
+            }
             return new IntType(e.line);
         } else if (e instanceof Call) {
-            // Encontrar tipo de retorno del método
             Type objType = getExpressionType(((Call) e).e);
             if (objType instanceof ClassType) {
                 String className = ((ClassType) objType).className;
@@ -715,6 +856,27 @@ public class SemanticAnalyzerVisitor implements Visitor {
                   e instanceof MoreThan || e instanceof Equal || e instanceof NotEqual ||
                   e instanceof Plus || e instanceof Minus || e instanceof Mult || 
                   e instanceof Div) {
+            if (e instanceof LessThan) {
+                LessThan lt = (LessThan) e;
+                if (lt.e1 instanceof IdentifierExpr) {
+                    Variable var = scopeStack.lookup(((IdentifierExpr) lt.e1).s);
+                    if (var != null) var.used = true;
+                }
+                if (lt.e2 instanceof IdentifierExpr) {
+                    Variable var = scopeStack.lookup(((IdentifierExpr) lt.e2).s);
+                    if (var != null) var.used = true;
+                }
+            } else if (e instanceof Plus) {
+                Plus p = (Plus) e;
+                if (p.e1 instanceof IdentifierExpr) {
+                    Variable var = scopeStack.lookup(((IdentifierExpr) p.e1).s);
+                    if (var != null) var.used = true;
+                }
+                if (p.e2 instanceof IdentifierExpr) {
+                    Variable var = scopeStack.lookup(((IdentifierExpr) p.e2).s);
+                    if (var != null) var.used = true;
+                }
+            }
             return new IntType(e.line);
         }
         return null;
