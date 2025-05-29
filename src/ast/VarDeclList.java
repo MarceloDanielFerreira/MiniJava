@@ -22,4 +22,8 @@ public class VarDeclList extends Node {
 	public int size() {
 		return list.size();
 	}
+
+	public void remove(int i) {
+		list.remove(i);
+	}
 }

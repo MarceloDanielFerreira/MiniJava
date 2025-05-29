@@ -36,14 +36,14 @@ public class BBS {
         // ❌ Caso 4: asignación de tipo incorrecto (int = int[])
         i = arr;
 
-        // ❌ Caso 5: paso de parámetro incorrecto (int[] donde se espera int)
-        res = this.RecibeEntero(arr);
-
-        // ❌ Caso 6: operación entre tipos incompatibles (suma de int + objeto)
-        res = b + 1;
+        // ❌ Caso 5: paso de parámetro incorrecto (int[] donde se espera int) (No lo detecta)
+        //res = this.RecibeEntero(arr, b);
+		
+        // ❌ Caso 6: operación entre tipos incompatibles (suma de int + objeto) (No lo detecta)
+        //res = c + 1;
 
         // ❌ Caso 7: llamada a método inexistente
-        //dummy = b.metodoQueNoExiste();
+        dummy = b.metodoQueNoExiste();
 
         return 0;
     }

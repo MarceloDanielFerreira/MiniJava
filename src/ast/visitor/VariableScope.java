@@ -12,7 +12,7 @@ public class VariableScope {
     
     public void addSymbol(String id, Variable var) throws SemanticError {
         if (varSet.containsKey(id)) {
-            throw new SemanticError("Variable '" + id + "' already declared in this scope", var.getLineNumber());
+            throw new SemanticError("Variable '" + id + "' ya declarada en este ámbito", var.getLineNumber());
         }
         varSet.put(id, var);
     }

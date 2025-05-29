@@ -1,11 +1,13 @@
 import java.io.InputStreamReader;
 import ast.Goal;
 import ast.visitor.MiniJPrintVisitor;
+import ast.visitor.OptimizationVisitor;
 import ast.visitor.ASTPrinterVisitor;
 import ast.visitor.SemanticAnalyzerVisitor;
 import ast.visitor.SemanticError;
 import ast.visitor.Visitor;
 import java_cup.runtime.Symbol;
+import java.util.List;
 
 public class Main {
 
@@ -29,22 +31,21 @@ public class Main {
             Visitor ast = new ASTPrinterVisitor();
             ast.visit(g);
             
-            // Run semantic analysis last
-            System.out.println("\n\n======================");
+            // Análisis semántico
+            System.out.println("\n======================");
             System.out.println("  SEMANTIC ANALYSIS   ");
             System.out.println("======================");
             SemanticAnalyzerVisitor semantic = new SemanticAnalyzerVisitor();
-            semantic.visit(g);
-            
-            // Print semantic errors if any
-            if (!semantic.getErrors().isEmpty()) {
-                System.out.println("\nSemantic errors found:");
-                for (SemanticError error : semantic.getErrors()) {
-                    System.out.println(error.getMessage());
-                }
-            } else {
-                System.out.println("\nNo semantic errors found.");
-            }
+            List<SemanticError> errors = semantic.analyze(g);
+
+            // Optimización
+            System.out.println("\n======================");
+            System.out.println("  OPTIMIZATION PHASE   ");
+            System.out.println("======================");
+            OptimizationVisitor optimizer = new OptimizationVisitor();
+            optimizer.visit(g);
+
+            System.out.println("Todas las fases terminadas");
             
         } catch (Exception e) {
             e.printStackTrace();

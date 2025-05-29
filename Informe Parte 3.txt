@@ -8,9 +8,11 @@ INFORME DE IMPLEMENTACIÓN DEL ANALIZADOR SEMÁNTICO
 - Se genera un error semántico para cada variable no utilizada
 
 2. Optimización de la R.I. (Remover variables no utilizadas)
-✗ NO IMPLEMENTADO
-- Aunque se detectan las variables no utilizadas, no se realiza la optimización del árbol
-- Se requeriría un nuevo visitor (OptimizationVisitor) para remover las declaraciones no utilizadas
+✓ IMPLEMENTADO
+- Se implementó el OptimizationVisitor para remover variables no utilizadas
+- El visitor recorre el AST y elimina las declaraciones de variables no usadas
+- Se mantiene la estructura del árbol mientras se eliminan las declaraciones innecesarias
+- Se optimiza el código sin afectar su funcionalidad
 
 3. Variables duplicadas
 ✓ IMPLEMENTADO
@@ -26,11 +28,11 @@ INFORME DE IMPLEMENTACIÓN DEL ANALIZADOR SEMÁNTICO
 - Se generan errores semánticos para asignaciones incorrectas
 
 5. Type checking en parámetros de métodos
-✓ IMPLEMENTADO
-- Se verifica el número correcto de argumentos
-- Se verifica la compatibilidad de tipos entre argumentos y parámetros
-- Se verifica el tipo de retorno del método
-- Se generan errores semánticos para cada tipo de error
+✗ NO IMPLEMENTADO
+- No se verifica completamente la compatibilidad de tipos entre argumentos y parámetros
+- No se maneja correctamente la herencia en los tipos de parámetros
+- Se requiere mejorar la verificación de tipos en llamadas a métodos
+- Se necesita implementar una verificación más robusta de tipos en parámetros
 
 6. Type checking entre expresiones
 ✓ IMPLEMENTADO
@@ -40,10 +42,11 @@ INFORME DE IMPLEMENTACIÓN DEL ANALIZADOR SEMÁNTICO
 - Se generan errores semánticos para expresiones inválidas
 
 7. Chequeo de métodos existentes
-✓ IMPLEMENTADO
-- Se verifica la existencia de métodos en la jerarquía de clases
-- Se maneja correctamente la herencia al buscar métodos
-- Se generan errores semánticos para métodos no encontrados
+✗ NO IMPLEMENTADO
+- No se verifica completamente la existencia de métodos en la jerarquía de clases
+- No se maneja correctamente la herencia al buscar métodos
+- Se requiere implementar una búsqueda más robusta en la jerarquía de clases
+- Se necesita mejorar la detección de métodos sobrescritos
 
 8. Type checking en retorno de métodos
 ✓ IMPLEMENTADO
