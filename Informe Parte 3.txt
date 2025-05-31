@@ -1,73 +1,72 @@
-INFORME DE IMPLEMENTACIÓN DEL ANALIZADOR SEMÁNTICO
+INFORME DE IMPLEMENTACIÓN DEL ANALIZADOR SEMÁNTICO (Parte 3 Compilador)
+Estudiante: Marcelo Ferreira
 
 1. Variables no utilizadas
 ✓ IMPLEMENTADO
-- El analizador detecta variables no utilizadas mediante el campo 'used' en la clase Variable
-- Se verifica al final de cada ámbito (método, clase, bloque) usando checkUnusedVariables()
-- Se marcan las variables como usadas cuando aparecen en expresiones o asignaciones
+- El analizador detecta variables no utilizadas.
+- Se marcan las variables como usadas cuando aparecen en expresiones, si solo se asignan no se marca
 - Se genera un error semántico para cada variable no utilizada
 
 2. Optimización de la R.I. (Remover variables no utilizadas)
 ✓ IMPLEMENTADO
 - Se implementó el OptimizationVisitor para remover variables no utilizadas
-- El visitor recorre el AST y elimina las declaraciones de variables no usadas
-- Se mantiene la estructura del árbol mientras se eliminan las declaraciones innecesarias
-- Se optimiza el código sin afectar su funcionalidad
+- El visitor recorre el AST y elimina las declaraciones de variables no usadas(siguiendo el mismo principio)
 
 3. Variables duplicadas
 ✓ IMPLEMENTADO
-- Se verifica en insertSymbol() que no existan variables duplicadas en el mismo ámbito
-- Se genera un error semántico cuando se detecta una variable duplicada
-- Se maneja correctamente el scope de variables en diferentes ámbitos
+- Se verifica que no existan variables duplicadas en el mismo ámbito
 
 4. Type checking en asignaciones
 ✓ IMPLEMENTADO
-- Se verifica la compatibilidad de tipos usando isSubtype()
-- Se maneja correctamente la herencia entre clases
-- Se verifica el scope de las variables antes de asignar
+- Se verifica la compatibilidad de tipos
 - Se generan errores semánticos para asignaciones incorrectas
 
 5. Type checking en parámetros de métodos
 ✗ NO IMPLEMENTADO
-- No se verifica completamente la compatibilidad de tipos entre argumentos y parámetros
-- No se maneja correctamente la herencia en los tipos de parámetros
-- Se requiere mejorar la verificación de tipos en llamadas a métodos
-- Se necesita implementar una verificación más robusta de tipos en parámetros
+
 
 6. Type checking entre expresiones
 ✓ IMPLEMENTADO
-- Se verifica la compatibilidad de tipos en operaciones binarias
-- Se verifica el tipo de retorno de llamadas a métodos
-- Se verifica el tipo de variables en expresiones
-- Se generan errores semánticos para expresiones inválidas
+- Se verifica la compatibilidad de tipos en operaciones
 
 7. Chequeo de métodos existentes
-✗ NO IMPLEMENTADO
-- No se verifica completamente la existencia de métodos en la jerarquía de clases
-- No se maneja correctamente la herencia al buscar métodos
-- Se requiere implementar una búsqueda más robusta en la jerarquía de clases
-- Se necesita mejorar la detección de métodos sobrescritos
+✓ IMPLEMENTADO
+- Se destaca que no existe dicho metodo, y el retorno es null, por lo que hay doble error
 
 8. Type checking en retorno de métodos
 ✓ IMPLEMENTADO
 - Se verifica que el tipo de retorno coincida con el declarado
-- Se verifica la compatibilidad de tipos usando isSubtype()
-- Se generan errores semánticos para retornos incorrectos
 
-Características adicionales implementadas:
-- Manejo de ámbitos anidados mediante VariableScopeStack
-- Verificación de tipos para arrays y objetos
-- Verificación de tipos en operaciones aritméticas y lógicas
-- Verificación de tipos en condiciones de if y while
-- Verificación de tipos en operaciones con arrays
-- Manejo de errores semánticos con mensajes descriptivos
-- No aborta el proceso de compilación, continúa buscando errores
+En la raiz del proyecto estan las clases ValidCode e InvalidCode sobre las cual probe mi analisis
+     [java] ======================
+     [java]   ANALISIS SEMANTICO   
+     [java] ======================
+     [java] Errores semanticos encontrados:
+     [java] Error en la linea 7: Clase padre 'Hola' no encontrada
+     [java] Error en la linea 10: Variable 'size' ya declarada en este ambito
+     [java] Error en la linea 13: Variable 'unusedVar' declarada pero nunca utilizada en una expresion
+     [java] Error en la linea 14: Variable 'assignedNotUsed' declarada pero nunca utilizada en una expresion
+     [java] Error en la linea 15: Variable 'aux' declarada pero nunca utilizada en una expresion
+     [java] Error en la linea 27: Variable 'i' declarada pero nunca utilizada en una expresion
+     [java] Error en la linea 29: Variable 'res' declarada pero nunca utilizada en una expresion
+     [java] Error en la linea 31: Variable 'dummy' declarada pero nunca utilizada en una expresion
+     [java] Error en la linea 37: Error de tipo en asignacion: no se puede asignar int[] a int
+     [java] Error en la linea 42: Error de tipo en operacion +: no se puede operar BBS con int
+     [java] Error en la linea 42: Error de tipo en asignacion: expresion no valida
+     [java] Error en la linea 45: M�todo 'metodoQueNoExiste' no existe en clase BBS
+     [java] Error en la linea 45: Error de tipo en asignacion: expresion no valida
+     [java] Error en la linea 53: Error de tipo en retorno del m�todo metodoIncorrecto: no se puede retornar BBS donde se espera int
+     [java] ======================
+     [java]   OPTIMIZACION  
+     [java] ======================
+     [java] Optimizacion: Eliminando variable no utilizada 'aux' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'assignedNotUsed' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'unusedVar' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'dummy' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'res' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'i' de tipo IntType
+     [java] ======================
+     [java]   GENERACION DE CODIGO  
+     [java] ======================
+     [java] PROXIMAMENTE
 
-Recomendaciones de mejora:
-1. Implementar el OptimizationVisitor para remover código no utilizado
-2. Agregar más mensajes de error descriptivos
-3. Mejorar el manejo de errores en cascada
-4. Agregar verificación de ciclos en la herencia
-5. Implementar verificación de métodos abstractos
-6. Agregar verificación de inicialización de variables
-7. Mejorar el manejo de tipos genéricos o arrays de objetos 

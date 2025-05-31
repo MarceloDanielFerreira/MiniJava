@@ -12,7 +12,7 @@ public class OptimizationVisitor implements Visitor {
     // Pila de ámbitos para manejar el scope de variables
     private VariableScopeStack scopeStack;
     // Mapa que registra qué variables han sido utilizadas
-    private Map<String, Boolean> usedVariables;
+    private Map<String, Boolean> variablesUsadas;
 
     /**
      * Constructor del visitante de optimización.
@@ -20,7 +20,7 @@ public class OptimizationVisitor implements Visitor {
      */
     public OptimizationVisitor() {
         this.scopeStack = new VariableScopeStack();
-        this.usedVariables = new HashMap<>();
+        this.variablesUsadas = new HashMap<>();
     }
 
     /**
@@ -46,7 +46,7 @@ public class OptimizationVisitor implements Visitor {
         for (int i = 0; i < n.sl.size(); i++) {
             visit(n.sl.get(i));
         }
-        removeUnusedVariables(n.vl);
+        eliminarVariablesNoUsadas(n.vl);
         scopeStack.popScope();
     }
 
@@ -62,7 +62,7 @@ public class OptimizationVisitor implements Visitor {
         for (int i = 0; i < n.ml.size(); i++) {
             visit(n.ml.get(i));
         }
-        removeUnusedVariables(n.vl);
+        eliminarVariablesNoUsadas(n.vl);
         scopeStack.popScope();
     }
 
@@ -78,7 +78,7 @@ public class OptimizationVisitor implements Visitor {
         for (int i = 0; i < n.ml.size(); i++) {
             visit(n.ml.get(i));
         }
-        removeUnusedVariables(n.vl);
+        eliminarVariablesNoUsadas(n.vl);
         scopeStack.popScope();
     }
 
@@ -120,7 +120,7 @@ public class OptimizationVisitor implements Visitor {
             Param p = n.fl.get(i);
             try {
                 scopeStack.insertSymbol(p.t, p.i, null);
-                usedVariables.put(p.i.s, true); // Los parámetros siempre se consideran usados
+                variablesUsadas.put(p.i.s, true); // Los parámetros siempre se consideran usados
             } catch (SemanticError e) {
                 // Ignorar errores semánticos en la optimización
             }
@@ -135,7 +135,7 @@ public class OptimizationVisitor implements Visitor {
         }
         visit(n.e);
         
-        removeUnusedVariables(n.vl);
+        eliminarVariablesNoUsadas(n.vl);
         scopeStack.popScope();
     }
 
@@ -143,18 +143,18 @@ public class OptimizationVisitor implements Visitor {
      * Elimina las variables no utilizadas de una lista de declaraciones.
      * @param vl Lista de declaraciones de variables a analizar
      */
-    private void removeUnusedVariables(VarDeclList vl) {
+    private void eliminarVariablesNoUsadas(VarDeclList vl) {
         for (int i = vl.size() - 1; i >= 0; i--) {
             VarDecl vd = vl.get(i);
-            String varName = vd instanceof VarDeclSimple ? 
+            String nombreVariable = vd instanceof VarDeclSimple ? 
                 ((VarDeclSimple) vd).i.s : 
                 ((VarDeclAssign) vd).i.s;
             
-            if (!usedVariables.getOrDefault(varName, false)) {
-                String type = vd instanceof VarDeclSimple ? 
+            if (!variablesUsadas.getOrDefault(nombreVariable, false)) {
+                String tipo = vd instanceof VarDeclSimple ? 
                     ((VarDeclSimple) vd).t.getClass().getSimpleName() :
                     ((VarDeclAssign) vd).t.getClass().getSimpleName();
-                System.out.println("Optimización: Eliminando variable no utilizada '" + varName + "' de tipo " + type);
+                System.out.println("Optimizacion: Eliminando variable no utilizada '" + nombreVariable + "' de tipo " + tipo);
                 vl.remove(i);
             }
         }
@@ -228,7 +228,7 @@ public class OptimizationVisitor implements Visitor {
         // Marcar la variable del array como usada
         Variable var = scopeStack.lookup(n.i.s);
         if (var != null) {
-            usedVariables.put(n.i.s, true);
+            variablesUsadas.put(n.i.s, true);
         }
     }
 
@@ -324,7 +324,7 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita un acceso a array.
-     * Recorre las expresiones y marca la variable del array como usada.
+     * Recorre la expresión del array y el índice.
      */
     public void visit(ArrayLookup n) {
         visit(n.e1);
@@ -334,7 +334,7 @@ public class OptimizationVisitor implements Visitor {
         if (n.e1 instanceof IdentifierExpr) {
             Variable var = scopeStack.lookup(((IdentifierExpr) n.e1).s);
             if (var != null) {
-                usedVariables.put(((IdentifierExpr) n.e1).s, true);
+                variablesUsadas.put(((IdentifierExpr) n.e1).s, true);
             }
         }
     }
@@ -345,6 +345,14 @@ public class OptimizationVisitor implements Visitor {
      */
     public void visit(ArrayLength n) {
         visit(n.e);
+        
+        // Marcar la variable del array como usada
+        if (n.e instanceof IdentifierExpr) {
+            Variable var = scopeStack.lookup(((IdentifierExpr) n.e).s);
+            if (var != null) {
+                variablesUsadas.put(((IdentifierExpr) n.e).s, true);
+            }
+        }
     }
 
     /**
@@ -360,7 +368,6 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita un literal entero.
-     * No requiere acción.
      */
     public void visit(IntegerLiteral n) {
         // No se requiere acción
@@ -368,19 +375,17 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita una expresión de identificador.
-     * Marca la variable como usada si está en el ámbito actual.
+     * Marca la variable como usada.
      */
     public void visit(IdentifierExpr n) {
-        // Marcar la variable como usada solo si está en el ámbito actual
         Variable var = scopeStack.lookup(n.s);
         if (var != null) {
-            usedVariables.put(n.s, true);
+            variablesUsadas.put(n.s, true);
         }
     }
 
     /**
      * Visita una referencia this.
-     * No requiere acción.
      */
     public void visit(This n) {
         // No se requiere acción
@@ -396,7 +401,6 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita una creación de objeto.
-     * No requiere acción.
      */
     public void visit(NewObject n) {
         // No se requiere acción
@@ -404,7 +408,6 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita un identificador.
-     * No requiere acción.
      */
     public void visit(Identifier n) {
         // No se requiere acción
@@ -412,7 +415,6 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita un parámetro.
-     * No requiere acción (manejado en MethodDecl).
      */
     public void visit(Param n) {
         // No se requiere acción
@@ -420,7 +422,6 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita un tipo de array de enteros.
-     * No requiere acción.
      */
     public void visit(IntArrayType n) {
         // No se requiere acción
@@ -428,7 +429,6 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita un tipo entero.
-     * No requiere acción.
      */
     public void visit(IntType n) {
         // No se requiere acción
@@ -436,7 +436,6 @@ public class OptimizationVisitor implements Visitor {
 
     /**
      * Visita un tipo de clase.
-     * No requiere acción.
      */
     public void visit(ClassType n) {
         // No se requiere acción

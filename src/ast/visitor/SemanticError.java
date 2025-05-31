@@ -1,7 +1,11 @@
 package ast.visitor;
 
 public class SemanticError extends Exception {
-    private int lineNumber;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private int lineNumber;
     
     public SemanticError(String message, int lineNumber) {
         super(message);

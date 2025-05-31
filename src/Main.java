@@ -33,19 +33,22 @@ public class Main {
             
             // Análisis semántico
             System.out.println("\n======================");
-            System.out.println("  SEMANTIC ANALYSIS   ");
+            System.out.println("  ANALISIS SEMANTICO   ");
             System.out.println("======================");
             SemanticAnalyzerVisitor semantic = new SemanticAnalyzerVisitor();
             List<SemanticError> errors = semantic.analyze(g);
 
             // Optimización
             System.out.println("\n======================");
-            System.out.println("  OPTIMIZATION PHASE   ");
+            System.out.println("  OPTIMIZACION  ");
             System.out.println("======================");
             OptimizationVisitor optimizer = new OptimizationVisitor();
             optimizer.visit(g);
-
-            System.out.println("Todas las fases terminadas");
+            System.out.println("\n======================");
+            System.out.println("  GENERACION DE CODIGO  ");
+            System.out.println("======================");
+            System.out.println("PROXIMAMENTE ");
+            
             
         } catch (Exception e) {
             e.printStackTrace();

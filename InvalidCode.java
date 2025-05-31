@@ -1,52 +1,87 @@
-public class InvalidCode {
-    public static void main(String[] args) {
-        // Variable no utilizada
-        int unusedVar;
-        unusedVar = 10;
-        
-        // Variables duplicadas
-        int x;
-        String x;
-        x = 5;
-        x = "error";
-        
-        // Type checking incorrecto
-        Factorial fac;
-        fac = new Factorial();
-        fac = 10;  // Error: asignando int a Factorial
-        int y;
-        y = true;  // Error: asignando boolean a int
-        
-        // Método no existente
-        fac.nonExistentMethod();
-        
-        // Parámetros incorrectos
-        int result;
-        result = fac.calculate("error");  // Error: pasando String a método que espera int
-        
-        // Retorno incorrecto
-        int wrong;
-        wrong = fac.wrongReturn();
+public class BubbleSort {
+    public static void main(String[] a) {
+        System.out.println(new BBS().Start(10));
     }
 }
 
-public class Factorial {
-    public int calculate(int n) {
-        // Variable no utilizada
-        int unused;
-        unused = 0;
+public class BBS extends Hola { // Hola no existe 
+    int[] number;  
+    int size;      
+    int size;      // ❌ Caso 1: variable duplicada (ya fue declarada arriba)
+
+    public int Start(int sz) {
+        int unusedVar;        // ❌ Caso 2: variable declarada pero nunca usada
+        int assignedNotUsed;  // ❌ Caso 3: asignada pero no usada
+        int aux;
+        assignedNotUsed = 123;
         
-        // Type checking en expresiones
-        int x;
-        x = (10 + "error");  // Error: operando String con int
-        
-        // Retorno incorrecto
-        return "error";  // Error: retornando String en método int
+        aux = this.Init(sz);
+        aux = this.Print();
+        System.out.println(99999);
+        aux = this.Sort();
+        aux = this.Print();
+        return 0;
     }
-    
-    public int wrongReturn() {
-        Factorial f;
-        f = new Factorial();
-        return f;  // Error: retornando Factorial en método int
+
+    public int Sort() {
+        int i;
+        int[] arr;
+        int res;
+        BBS b;
+        int dummy;
+
+        arr = new int[10];
+        b = new BBS();
+
+        // ❌ Caso 4: asignación de tipo incorrecto (int = int[])
+        i = arr;
+
+        // ❌ Caso 5: paso de parámetro incorrecto y cantidad de parametros (int[] donde se espera int) (No lo detecta)
+        //res = this.RecibeEntero(arr, b);
+        // ❌ Caso 6: operación entre tipos incompatibles (suma de int + objeto)
+        res = b + 1;
+
+        // ❌ Caso 7: llamada a método inexistente, lo detecta y retorna null
+        dummy = b.metodoQueNoExiste();
+
+        return 0;
     }
-} 
+
+    public int metodoIncorrecto() {
+        BBS obj;
+        obj = new BBS();
+        return obj; // ❌ Caso 8: retornar objeto donde se espera int
+    }
+
+    public int RecibeEntero(int x) {
+        return x;
+    }
+
+    public int Print() {
+        int j;
+        j = 0;
+        while (j < size) {
+            System.out.println(number[j]);
+            j = j + 1;
+        }
+        return 0;
+    }
+
+    public int Init(int sz) {
+        size = sz;
+        number = new int[sz];
+
+        number[0] = 20;
+        number[1] = 7;
+        number[2] = 12;
+        number[3] = 18;
+        number[4] = 2;
+        number[5] = 11;
+        number[6] = 6;
+        number[7] = 9;
+        number[8] = 19;
+        number[9] = 5;
+
+        return 0;
+    }
+}
