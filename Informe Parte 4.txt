@@ -1,0 +1,469 @@
+INFORME DE IMPLEMENTACIÓN DEL Generador de Código Jasmin (Parte 4 Compilador)
+Estudiante: Marcelo Ferreira
+
+Para esta ultima parte me base en el MiniJPrinterVisitor en como ir construyendo segun la clase que sea.
+El visitor realiza lo siguiente:
+
+- Por cada clase, crea un archivo Jasmin correspondiente y escribe el encabezado de clase y el constructor por defecto.
+- Se generan las instrucciones Jasmin correspondientes para sentencias como asignaciones, operaciones aritméticas, condicionales (`if`), bucles (`while`), llamadas a métodos, creación de objetos y arrays, y sentencias de impresión (`Print`).
+
+PRUEBAS:
+- Las pruebas las realice con mis clases que estan en la raiz. 
+	ValidCode.java
+	Suma.java
+	InvalidCode.java
+-Agregue que, no se genere el código Jasmin si existen errores semanticos, unicamente si el error es por variables no utilizadas permite que continue la ejecución
+La Prueba con Suma:
+
+public class Suma {
+    public static void main(String[] args) {
+        int a;
+        int b;
+        int c;
+        int suma;
+        a=5;
+        b=7;
+        suma=a+b;
+        System.out.println(suma);
+    }
+}
+
+Ejecución:
+
+
+run-main:
+     [java] ======================
+     [java]   MINI-J CODE OUTPUT  
+     [java] ======================
+     [java] class Suma {
+     [java]   public static void main (String [] args) {
+     [java]         int a;
+     [java]     int b;
+     [java]     int c;
+     [java]     int suma;
+     [java]     a = 5;
+     [java]     b = 7;
+     [java]     suma = (a + b);
+     [java]     System.out.println(suma);
+     [java]   }
+     [java] }
+     [java] ======================
+     [java]     AST TREE OUTPUT   
+     [java] ======================
+     [java] Goal
+     [java]   MainClass
+     [java]     ClassName: Suma
+     [java]     ArgsName: args
+     [java]     Variables:
+     [java]       VarDecl int a;
+     [java]       VarDecl int b;
+     [java]       VarDecl int c;
+     [java]       VarDecl int suma;
+     [java]     Statements:
+     [java]       Assign a = Int(5)
+     [java]       Assign b = Int(7)
+     [java]       Assign suma = Plus(Id(a), Id(b))
+     [java]       Print Id(suma)
+     [java] ======================
+     [java]   ANALISIS SEMANTICO   
+     [java] ======================
+     [java] Advertencia: Variable 'c' declarada pero nunca utilizada en una expresion (linea 5)
+     [java] No se encontraron errores semanticos.
+     [java] ======================
+     [java]   OPTIMIZACION  
+     [java] ======================
+     [java] Optimizacion: Eliminando variable no utilizada 'c' de tipo IntType
+     [java] Optimizaci�n completada sin advertencias.
+     [java] ======================
+     [java]   GENERACION DE CODIGO  
+     [java] ======================
+     [java] --- Suma.j ---
+     [java] .class public Suma
+     [java] .super java/lang/Object
+     [java] .method public <init>()V
+     [java]    aload_0
+     [java]    invokespecial java/lang/Object/<init>()V
+     [java]    return
+     [java] .end method
+     [java] .method public static main([Ljava/lang/String;)V
+     [java]    .limit stack 8
+     [java]    .limit locals 4
+     [java]    ldc 5
+     [java]    istore_1
+     [java]    ldc 7
+     [java]    istore_2
+     [java]    iload_1
+     [java]    iload_2
+     [java]    iadd
+     [java]    istore_3
+     [java]    getstatic java/lang/System/out Ljava/io/PrintStream;
+     [java]    iload_3
+     [java]    invokevirtual java/io/PrintStream/println(I)V
+     [java]    return
+     [java] .end method
+     [java] Archivos .j generados en el directorio actual.
+BUILD SUCCESSFUL
+En CMD:
+
+C:\Jasmin>java -jar jasmin.jar Suma.j
+Generated: Suma.class
+
+C:\Jasmin>java Suma
+12
+
+Tambien lo probe con Valid code, y el resultado de la clase me da 120, que es el correcto
+
+La ejecución es esta:
+
+run-main:
+     [java] ======================
+     [java]   MINI-J CODE OUTPUT  
+     [java] ======================
+     [java] class ValidCode {
+     [java]   public static void main (String [] args) {
+     [java]         Factorial fac;
+     [java]     int result;
+     [java]     fac = new Factorial();
+     [java]     result = fac.calculate(5);
+     [java]     System.out.println(result);
+     [java]   }
+     [java] }
+     [java] class Factorial { 
+     [java]   public int calculate (int n) { 
+     [java]     int result;
+     [java]     int i;
+     [java]     result = 1;
+     [java]     i = 1;
+     [java]     while ((i < (n + 1))) { 
+     [java]       result = (result * i);
+     [java]       i = (i + 1);
+     [java]     } 
+     [java]     return result;
+     [java]   }
+     [java] }
+     [java] ======================
+     [java]     AST TREE OUTPUT   
+     [java] ======================
+     [java] Goal
+     [java]   MainClass
+     [java]     ClassName: ValidCode
+     [java]     ArgsName: args
+     [java]     Variables:
+     [java]       VarDecl Factorial fac;
+     [java]       VarDecl int result;
+     [java]     Statements:
+     [java]       Assign fac = NewObject(Factorial)
+     [java]       Assign result = Call(Id(fac), calculate, [Int(5)])
+     [java]       Print Id(result)
+     [java]   ClassDeclSimple
+     [java]     ClassName: Factorial
+     [java]     Variables:
+     [java]     Methods:
+     [java]       MethodDecl
+     [java]         ReturnType: int
+     [java]         MethodName: calculate
+     [java]         Parameters:
+     [java]           int n
+     [java]         LocalVariables:
+     [java]           VarDecl int result;
+     [java]           VarDecl int i;
+     [java]         Statements:
+     [java]           Assign result = Int(1)
+     [java]           Assign i = Int(1)
+     [java]           While
+     [java]             Condition: LessThan(Id(i), Plus(Id(n), Int(1)))
+     [java]             Body:
+     [java]               Block
+     [java]                 Assign result = Mult(Id(result), Id(i))
+     [java]                 Assign i = Plus(Id(i), Int(1))
+     [java]         Return: Id(result)
+     [java] ======================
+     [java]   ANALISIS SEMANTICO   
+     [java] ======================
+     [java] No se encontraron errores semanticos.
+     [java] ======================
+     [java]   OPTIMIZACION  
+     [java] ======================
+     [java] Optimizaci�n completada sin advertencias.
+     [java] ======================
+     [java]   GENERACION DE CODIGO  
+     [java] ======================
+     [java] --- ValidCode.j ---
+     [java] .class public ValidCode
+     [java] .super java/lang/Object
+     [java] .method public <init>()V
+     [java]    aload_0
+     [java]    invokespecial java/lang/Object/<init>()V
+     [java]    return
+     [java] .end method
+     [java] .method public static main([Ljava/lang/String;)V
+     [java]    .limit stack 8
+     [java]    .limit locals 3
+     [java]    new Factorial
+     [java]    dup
+     [java]    invokespecial Factorial/<init>()V
+     [java]    astore_1
+     [java]    aload_1
+     [java]    ldc 5
+     [java]    invokevirtual Factorial/calculate(I)I
+     [java]    istore_2
+     [java]    getstatic java/lang/System/out Ljava/io/PrintStream;
+     [java]    iload_2
+     [java]    invokevirtual java/io/PrintStream/println(I)V
+     [java]    return
+     [java] .end method
+     [java] --- Factorial.j ---
+     [java] .class public Factorial
+     [java] .super java/lang/Object
+     [java] .method public <init>()V
+     [java]    aload_0
+     [java]    invokespecial java/lang/Object/<init>()V
+     [java]    return
+     [java] .end method
+     [java] .method public calculate(I)I
+     [java]    .limit stack 8
+     [java]    .limit locals 4
+     [java]    ldc 1
+     [java]    istore_2
+     [java]    ldc 1
+     [java]    istore_3
+     [java] LabelWhileStart1996181658:
+     [java]    iload_3
+     [java]    iload_1
+     [java]    ldc 1
+     [java]    iadd
+     [java]    if_icmplt LabelLtTrue806353501
+     [java]    ldc 0
+     [java]    goto LabelLtEnd806353501
+     [java] LabelLtTrue806353501:
+     [java]    ldc 1
+     [java] LabelLtEnd806353501:
+     [java]    ifeq LabelWhileEnd1996181658
+     [java]    iload_2
+     [java]    iload_3
+     [java]    imul
+     [java]    istore_2
+     [java]    iload_3
+     [java]    ldc 1
+     [java]    iadd
+     [java]    istore_3
+     [java]    goto LabelWhileStart1996181658
+     [java] LabelWhileEnd1996181658:
+     [java]    iload_2
+     [java]    ireturn
+     [java] .end method
+     [java] Archivos .j generados en el directorio actual.
+BUILD SUCCESSFUL
+
+Y el codigo de Example que utilice en la parte 3:
+
+
+run-main:
+     [java] ======================
+     [java]   MINI-J CODE OUTPUT  
+     [java] ======================
+     [java] class BubbleSort {
+     [java]   public static void main (String [] a) {
+     [java]         System.out.println(new BBS().Start(10));
+     [java]   }
+     [java] }
+     [java] class BBS extends 
+     [java] Hola { 
+     [java]   int [] number;
+     [java]   int size;
+     [java]   int size;
+     [java]   public int Start (int sz) { 
+     [java]     int unusedVar;
+     [java]     int assignedNotUsed;
+     [java]     int aux;
+     [java]     assignedNotUsed = 123;
+     [java]     aux = this.Init(sz);
+     [java]     aux = this.Print();
+     [java]     System.out.println(99999);
+     [java]     aux = this.Sort();
+     [java]     aux = this.Print();
+     [java]     return 0;
+     [java]   }
+     [java]   public int Sort () { 
+     [java]     int i;
+     [java]     int [] arr;
+     [java]     int res;
+     [java]     BBS b;
+     [java]     int dummy;
+     [java]     arr = new int [10];
+     [java]     b = new BBS();
+     [java]     i = arr;
+     [java]     res = (b + 1);
+     [java]     dummy = b.metodoQueNoExiste();
+     [java]     return 0;
+     [java]   }
+     [java]   public int metodoIncorrecto () { 
+     [java]     BBS obj;
+     [java]     obj = new BBS();
+     [java]     return obj;
+     [java]   }
+     [java]   public int RecibeEntero (int x) { 
+     [java]     return x;
+     [java]   }
+     [java]   public int Print () { 
+     [java]     int j;
+     [java]     j = 0;
+     [java]     while ((j < size)) { 
+     [java]       System.out.println(number[j]);
+     [java]       j = (j + 1);
+     [java]     } 
+     [java]     return 0;
+     [java]   }
+     [java]   public int Init (int sz) { 
+     [java]     size = sz;
+     [java]     number = new int [sz];
+     [java]     number[0] = 20;
+     [java]     number[1] = 7;
+     [java]     number[2] = 12;
+     [java]     number[3] = 18;
+     [java]     number[4] = 2;
+     [java]     number[5] = 11;
+     [java]     number[6] = 6;
+     [java]     number[7] = 9;
+     [java]     number[8] = 19;
+     [java]     number[9] = 5;
+     [java]     return 0;
+     [java]   }
+     [java] }
+     [java] ======================
+     [java]     AST TREE OUTPUT   
+     [java] ======================
+     [java] Goal
+     [java]   MainClass
+     [java]     ClassName: BubbleSort
+     [java]     ArgsName: a
+     [java]     Variables:
+     [java]     Statements:
+     [java]       Print Call(NewObject(BBS), Start, [Int(10)])
+     [java]   ClassDeclExtends
+     [java]     ClassName: BBS
+     [java]     ParentClass: Hola
+     [java]     Variables:
+     [java]       VarDecl int[] number;
+     [java]       VarDecl int size;
+     [java]       VarDecl int size;
+     [java]     Methods:
+     [java]       MethodDecl
+     [java]         ReturnType: int
+     [java]         MethodName: Start
+     [java]         Parameters:
+     [java]           int sz
+     [java]         LocalVariables:
+     [java]           VarDecl int unusedVar;
+     [java]           VarDecl int assignedNotUsed;
+     [java]           VarDecl int aux;
+     [java]         Statements:
+     [java]           Assign assignedNotUsed = Int(123)
+     [java]           Assign aux = Call(This, Init, [Id(sz)])
+     [java]           Assign aux = Call(This, Print, [])
+     [java]           Print Int(99999)
+     [java]           Assign aux = Call(This, Sort, [])
+     [java]           Assign aux = Call(This, Print, [])
+     [java]         Return: Int(0)
+     [java]       MethodDecl
+     [java]         ReturnType: int
+     [java]         MethodName: Sort
+     [java]         Parameters:
+     [java]         LocalVariables:
+     [java]           VarDecl int i;
+     [java]           VarDecl int[] arr;
+     [java]           VarDecl int res;
+     [java]           VarDecl BBS b;
+     [java]           VarDecl int dummy;
+     [java]         Statements:
+     [java]           Assign arr = NewArray(Int(10))
+     [java]           Assign b = NewObject(BBS)
+     [java]           Assign i = Id(arr)
+     [java]           Assign res = Plus(Id(b), Int(1))
+     [java]           Assign dummy = Call(Id(b), metodoQueNoExiste, [])
+     [java]         Return: Int(0)
+     [java]       MethodDecl
+     [java]         ReturnType: int
+     [java]         MethodName: metodoIncorrecto
+     [java]         Parameters:
+     [java]         LocalVariables:
+     [java]           VarDecl BBS obj;
+     [java]         Statements:
+     [java]           Assign obj = NewObject(BBS)
+     [java]         Return: Id(obj)
+     [java]       MethodDecl
+     [java]         ReturnType: int
+     [java]         MethodName: RecibeEntero
+     [java]         Parameters:
+     [java]           int x
+     [java]         LocalVariables:
+     [java]         Statements:
+     [java]         Return: Id(x)
+     [java]       MethodDecl
+     [java]         ReturnType: int
+     [java]         MethodName: Print
+     [java]         Parameters:
+     [java]         LocalVariables:
+     [java]           VarDecl int j;
+     [java]         Statements:
+     [java]           Assign j = Int(0)
+     [java]           While
+     [java]             Condition: LessThan(Id(j), Id(size))
+     [java]             Body:
+     [java]               Block
+     [java]                 Print ArrayLookup(Id(number), Id(j))
+     [java]                 Assign j = Plus(Id(j), Int(1))
+     [java]         Return: Int(0)
+     [java]       MethodDecl
+     [java]         ReturnType: int
+     [java]         MethodName: Init
+     [java]         Parameters:
+     [java]           int sz
+     [java]         LocalVariables:
+     [java]         Statements:
+     [java]           Assign size = Id(sz)
+     [java]           Assign number = NewArray(Id(sz))
+     [java]           ArrayAssign number[Int(0)] = Int(20)
+     [java]           ArrayAssign number[Int(1)] = Int(7)
+     [java]           ArrayAssign number[Int(2)] = Int(12)
+     [java]           ArrayAssign number[Int(3)] = Int(18)
+     [java]           ArrayAssign number[Int(4)] = Int(2)
+     [java]           ArrayAssign number[Int(5)] = Int(11)
+     [java]           ArrayAssign number[Int(6)] = Int(6)
+     [java]           ArrayAssign number[Int(7)] = Int(9)
+     [java]           ArrayAssign number[Int(8)] = Int(19)
+     [java]           ArrayAssign number[Int(9)] = Int(5)
+     [java]         Return: Int(0)
+     [java] ======================
+     [java]   ANALISIS SEMANTICO   
+     [java] ======================
+     [java] Advertencia: Variable 'assignedNotUsed' declarada pero nunca utilizada en una expresion (linea 14)
+     [java] Advertencia: Variable 'aux' declarada pero nunca utilizada en una expresion (linea 15)
+     [java] Advertencia: Variable 'unusedVar' declarada pero nunca utilizada en una expresion (linea 13)
+     [java] Advertencia: Variable 'dummy' declarada pero nunca utilizada en una expresion (linea 31)
+     [java] Advertencia: Variable 'res' declarada pero nunca utilizada en una expresion (linea 29)
+     [java] Advertencia: Variable 'i' declarada pero nunca utilizada en una expresion (linea 27)
+     [java] Errores semanticos encontrados:
+     [java] Error en la linea 7: Clase padre 'Hola' no encontrada
+     [java] Error en la linea 10: Variable 'size' ya declarada en este ambito
+     [java] Error en la linea 37: Error de tipo en asignacion: no se puede asignar int[] a int
+     [java] Error en la linea 42: Error de tipo en operacion +: no se puede operar BBS con int
+     [java] Error en la linea 42: Error de tipo en asignacion: expresion no valida
+     [java] Error en la linea 45: Metodo 'metodoQueNoExiste' no existe en clase BBS
+     [java] Error en la linea 45: Error de tipo en asignacion: expresion no valida
+     [java] Error en la linea 53: Error de tipo en retorno del m�todo metodoIncorrecto: no se puede retornar BBS donde se espera int
+     [java] ======================
+     [java]   OPTIMIZACION  
+     [java] ======================
+     [java] Optimizacion: Eliminando variable no utilizada 'aux' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'assignedNotUsed' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'unusedVar' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'dummy' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'res' de tipo IntType
+     [java] Optimizacion: Eliminando variable no utilizada 'i' de tipo IntType
+     [java] Optimizaci�n completada sin advertencias.
+     [java] ======================
+     [java]   NO SE GENERA CODIGO  
+     [java] ======================
+     [java] Como se detectaron errores semanticos, no se proceder� a la generacion de codigo.
+BUILD SUCCESSFUL

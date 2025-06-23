@@ -49,7 +49,7 @@ public class SemanticAnalyzerVisitor implements Visitor {
 
     /**
      * Verifica variables no utilizadas en el ámbito actual.
-     * Agrega errores para cada variable declarada pero no usada.
+     * Solo muestra advertencias, nunca agrega errores.
      */
     private void checkVariablesNoUsadas() {
         VariableScope scopeActual = scopeStack.getCurrentScope();
@@ -58,7 +58,8 @@ public class SemanticAnalyzerVisitor implements Visitor {
             for (Map.Entry<String, Variable> entry : variables.entrySet()) {
                 Variable var = entry.getValue();
                 if (!var.used) {
-                    addError("Variable '" + var.id.s + "' declarada pero nunca utilizada en una expresion", var.id.line);
+                    // Solo advertencia, NO error
+                    System.out.println("Advertencia: Variable '" + var.id.s + "' declarada pero nunca utilizada en una expresion (linea " + var.id.line + ")");
                 }
             }
         }

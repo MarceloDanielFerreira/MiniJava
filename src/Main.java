@@ -1,4 +1,8 @@
 import java.io.InputStreamReader;
+
+import ast.ClassDecl;
+import ast.ClassDeclExtends;
+import ast.ClassDeclSimple;
 import ast.Goal;
 import ast.visitor.MiniJPrintVisitor;
 import ast.visitor.OptimizationVisitor;
@@ -8,6 +12,11 @@ import ast.visitor.SemanticError;
 import ast.visitor.Visitor;
 import java_cup.runtime.Symbol;
 import java.util.List;
+import ast.visitor.JCodeGenVisitor;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class Main {
 
@@ -44,11 +53,51 @@ public class Main {
             System.out.println("======================");
             OptimizationVisitor optimizer = new OptimizationVisitor();
             optimizer.visit(g);
-            System.out.println("\n======================");
-            System.out.println("  GENERACION DE CODIGO  ");
-            System.out.println("======================");
-            System.out.println("PROXIMAMENTE ");
-            
+            System.out.println("Optimización completada sin advertencias.");
+
+            // Solo generar código si no hay errores semánticos
+            if (errors.isEmpty()) {
+                System.out.println("\n======================");
+                System.out.println("  GENERACION DE CODIGO  ");
+                System.out.println("======================");
+
+                // Generación de código Jasmin
+                JCodeGenVisitor codegen = new JCodeGenVisitor();
+                codegen.visit(g);
+
+                // Mostrar el contenido de cada archivo .j generado en consola
+                // Obtener nombres de clases desde el AST
+                List<String> classNames = new ArrayList<>();
+                // MainClass
+                classNames.add(g.m.i1.s);
+                // Otras clases
+                for (int i = 0; i < g.cl.size(); i++) {
+                    ClassDecl c = g.cl.get(i);
+                    if (c instanceof ClassDeclSimple) {
+                        classNames.add(((ClassDeclSimple) c).i.s);
+                    } else if (c instanceof ClassDeclExtends) {
+                        classNames.add(((ClassDeclExtends) c).i.s);
+                    }
+                }
+                for (String className : classNames) {
+                    String fileName = className + ".j";
+                    System.out.println("\n--- " + fileName + " ---");
+                    try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            System.out.println(line);
+                        }
+                    } catch (IOException e) {
+                        System.out.println("No se pudo leer el archivo " + fileName);
+                    }
+                }
+                System.out.println("\nArchivos .j generados en el directorio actual.");
+            } else {
+                System.out.println("\n======================");
+                System.out.println("  NO SE GENERA CODIGO  ");
+                System.out.println("======================");
+                System.out.println("Como se detectaron errores semanticos, no se procederá a la generacion de codigo.");
+            }
             
         } catch (Exception e) {
             e.printStackTrace();
